@@ -3,7 +3,8 @@ from tkinter import *
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-
+import re
+import os
 class Database:# The Database class initializes a connection to a SQLite database 
 # and provides methods to execute SQL statements on that database.
 
@@ -36,7 +37,14 @@ class Student(Database):
         self.db_file = db_file
         super().__init__(db_file)
         self.root = root
-        self.root.geometry("1200x622+1+1")
+        self.w=1200
+        self.h=622
+        self.sw= root.winfo_screenwidth()
+        self.sh= root.winfo_screenheight()
+        self.x= (self.sw-self.w)/2
+        self.y= (self.sh-self.h)/2
+        self.root.geometry("%dx%d+%d+%d" % (self.w, self.h, self.x, self.y))
+        # self.root.geometry("1200x622+50+50")
         self.root.title("برنامج تسجيل الطلاب")
         self.root.resizable(False, False)
         lb1=Label(self.root, text="برنامج تسجيل الطلاب " ,font = ("Courier New",14) ,bg="#ff8a80")
@@ -172,23 +180,56 @@ class Student(Database):
         phone_val = self.phone_var.get()
         stage_val = self.stage_var.get()
         gender_val = self.gender_var.get()
+        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        phone_pattern = r'\d{10}$'
+        # existing_emails = []
+        # self.con = sqlite3.connect('students.db')
+        # self.cur = self.con.cursor()
+        # self.cur.execute("SELECT email FROM students")
+        # ems=self.cur.fetchall()
+        # for em in ems:
+        #     existing_emails.append(em)
+        # existing_ids = []
+        # print(existing_ids)
+        # self.con = sqlite3.connect('students.db')
+        # self.cur = self.con.cursor()
+        # self.cur.execute("SELECT id FROM students")
+        # ids=self.cur.fetchall()
+        # for i in ids:
+        #     existing_ids.append(i)
 
-        # Insert the values into the database
-        sql = """
-            INSERT INTO students ( id,gender, stage,phone,name,email )
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
-        values = (   id_val, gender_val,stage_val,phone_val,name_val,email_val )
+        # Check if the values are empty
+        if id_val==""or name_val=="" or email_val=="" or phone_val=="" or stage_val=="" or gender_val=="":
+            messagebox.showerror("تنبيه", "من فضلك ادخل البيانات الناقصة")
+            return
+        elif not re.fullmatch(email_pattern, self.email_var.get()):
+            messagebox.showerror("تنبيه", "خطأ في كتابة البريد الالكتروني")
+            return
+        elif not re.fullmatch(phone_pattern, self.phone_var.get()):
+            messagebox.showerror("تنبيه", "خطأ في كتابة رقم الهاتف")
+            return
+            
+        # # elif self.email_var.get() in existing_emails:
+        #     messagebox.showerror("تنبيه", "Email already exists")
+        #     return
+        
+        else:
+            sql = """
+                INSERT INTO students ( id,gender, stage,phone,name,email )
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+            values = (   id_val, gender_val,stage_val,phone_val,name_val,email_val )
 
-        try:
-            self.cur.execute(sql, values)
-            self.con.commit()
-            messagebox.showinfo("Success", "Student added successfully")
-            self.clear()
-            self.fetch_all()
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", str(e))
-        #------------------------- treeview اظهار البيانات على ----------
+            try:
+                self.cur.execute(sql, values)
+                self.con.commit()
+                messagebox.showinfo("اشعار", "تم اضافة الطالب بنجاح")
+               # existing_ids.append("id_val")
+                self.clear()
+                self.fetch_all()
+            except sqlite3.Error as e:
+                messagebox.showerror("Error", str(e))
+            #------------------------- treeview اظهار البيانات على ----------
     def fetch_all(self) :
         # Connects to the SQLite database file students.db to manage student data.
         # Opens a connection to the database file students.db.
@@ -312,7 +353,6 @@ class Student(Database):
         # If 'no', returns to continue running
         response=messagebox.askquestion("اغلاق ","هل تريد اغلاق البرنامج  ?", 
         icon='warning')
-        print(response)
         if   response == "yes":
             sys.exit()
         else:
